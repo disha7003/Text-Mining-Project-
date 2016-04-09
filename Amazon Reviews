@@ -1,0 +1,62 @@
+#####################################################################
+# Function for downloading product reviews from amazon.in
+# Usage:
+# url = "http://www.amazon.in/product-reviews/B00K81HIDS/ref=cm_cr_pr_top_link_2?ie=UTF8&pageNumber=2&showViewpoints=0&sortBy=byRankDescending"
+# 
+
+#
+# url should be for product reviews 2nd page url 
+#
+#
+#####################################################################
+
+require(stringr)||install.packages("stringr"); library(stringr)  
+require(utils)||install.packages("utils"); library(utils)  
+
+
+amazon.in= function(url,    # 2nd page review url of product
+                    n)      # Number of pages to extarct
+  
+  {           
+  
+  text_page=character(0)  # Create blank document
+  
+  pb <- txtProgressBar(min = 1, max = n, style = 3)    # define progress bar  
+  
+  url = unlist(str_split(url,"ie="))[1]   # Process url
+  url = substr(url,1,nchar(url)-2)        # Process url
+  
+  for(p in 1:n){
+    
+    url0 = paste(url,p,"?ie=UTF8&pageNumber=",p,"&showViewpoints=0&sortBy=byRankDescending",sep="") # Create final url
+    
+    text = readLines(url0)   # read Url
+    
+    text_start = grep('<div class="reviewText">',text)  # Review start marker
+    
+    text_stop = grep("<div style=\"padding-top: 10px; clear: both; width: 100%;\">", text) # review end marker
+    
+    if (length(text_start) == 0) break   # check for loop termination
+    
+    for(j in 1:length(text_start))   # process reviews
+    {
+      text_temp = paste(paste(text[(text_start[j]+1):(text_stop[j]-2)]),collapse=" ")
+      text_page = c(text_page,text_temp)
+    }
+    
+    setTxtProgressBar(pb, p)             # print progress bar
+    
+    #Sys.sleep(1)
+  }
+  
+  text_page =gsub("<.*?>", "", text_page)       # regex for Removing HTML character 
+  
+  text_page = gsub("^\\s+|\\s+$", "", text_page) # regex for removing leading and trailing white space
+  
+  return(text_page)       # return reviews
+  
+}
+
+url="http://www.amazon.in/product-reviews/1473605202/ref=cm_cr_pr_top_link_2?ie=UTF8&pageNumber=2&showViewpoints=0&sortBy=byRankDescending"
+pr_review = amazon.in(url,5)
+write.table(pr_review, file='there.txt', row.names=F, sep="\t")
